@@ -255,26 +255,7 @@ up together.
 `diff -r -w Alberta Manitoba` should only show the Alberta and Manitoba differences above. `diff -r -w Ontario Alberta`
 shows those plus the Ontario ones.
 
-## 6. Changes from the SHSM sample scripts (Ontario)
-
-* **Removed `st.ENTRYDATE < 2022-06-30`.** This hard-coded date was left over from one board's initial load. It
-  filtered out pre-registrations for 2022-23, and it now excludes every student who entered after June 2022.
-  `exclude_future_entries = 1` gives a rolling version of the same filter.
-* **Exit date.** The samples only kept program enrolments with a 1900 exit year. Because
-  `EXTRACT(YEAR FROM NULL) = 1900` is never true, enrolments with a NULL exit date were dropped. The queries keep
-  NULL exit dates, 1900 placeholders, future exit dates, and exited enrolments with a completion date.
-* **Sector mapping.** The samples mapped hard-coded GEN ids, which differ between districts. They also mapped
-  Mining to 17 (should be 18), used "Hospitality Tourism", and left out Forestry and Food Processing. The queries
-  now match on program name, using the `b_Sector` / `c_SectorID` CASE lists.
-* **IEP** is always `0`, because myBlueprint no longer uses it. (The sample's IEP subquery also failed whenever
-  a student had more than one matching enrolment.)
-* **OSP / CLA.** SkillDev date → OSP. CLA is left blank, because the spec marks it as legacy. The sample put a
-  program-completion flag there, and its `IS NOT NULL OR = 1900` logic also counted 1900 as complete.
-* **Duplicates.** SHSMStatus returns one row per student per SHSM program: completed enrolments first, then the most
-  recent. SHSMRecord no longer joins to program enrolments, which had caused duplicate certification rows.
-* **Secondary-school filter.** The CODESET "School Category = Sec" filter was replaced by `school_ids`.
-
-## 7. Known gaps and checks for the first run
+## 6. Known gaps and checks for the first run
 
 * `ps_customfields.getcf('Courses', …, 'alt_course_number')` returns NULL in districts that don't have that
   legacy custom field. That is harmless.
