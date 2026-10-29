@@ -1,4 +1,4 @@
--- studentcourses.sql - test copy of the SQL in Ontario/queries_root/ca.myblueprint.dem.studentcourses.named_queries.xml (plugin version 1.2.0)
+-- studentcourses.sql - test copy of the SQL in Ontario/queries_root/ca.myblueprint.dem.studentcourses.named_queries.xml (plugin version 1.2.1)
 -- Run in a SQL tool (e.g. DBeaver/SQL Developer) against the PowerSchool database.
 -- Edits here do NOT change the plugin; copy any changes back into the CDATA block (without these comment lines).
 
@@ -24,7 +24,7 @@ stored AS (
 		,sg.COURSE_NAME                                              AS course_name
 		,t.LASTDAY                                                   AS lastday
 		,sgrx.CREDIT_DATE                                            AS credit_date
-		,COALESCE(TO_CHAR(sg.AB_FINAL_MARK), sg.GRADE)               AS mark
+		,sg.GRADE                                                    AS mark
 		,sg.EARNEDCRHRS                                              AS earned
 		,sg.POTENTIALCRHRS                                           AS potential
 		,CAST(NULL AS NUMBER)                                        AS credit_hours

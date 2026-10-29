@@ -47,7 +47,7 @@ should keep using the myBlueprint API plugin.
    `replacewithyouremail@district.com` with your own contact email:
 
    ```xml
-   <plugin xmlns="http://plugin.powerschool.pearson.com" name="myBlueprint Data Exports" version="1.2.0">
+   <plugin xmlns="http://plugin.powerschool.pearson.com" name="myBlueprint Data Exports" version="1.2.1">
    	<publisher name="Example School District">
    		<contact email="sis.admin@example.org" />
    	</publisher>
@@ -73,7 +73,7 @@ that appears in more than one query has to be changed in every query that uses i
 | `include_legal_name` | Student | `0` | (new; sends the legal first name in LegalName) |
 | `append_middle_name` | Student | `0` | PsApiAppendMiddleName |
 | `powerscheduler_school_ids` | CourseMaster | `''` (none) | PsApiSchoolsUsingPowerScheduler |
-| `hs_courses_only` | CourseMaster, StudentCourses (Alberta, Manitoba) | `1` | (new; leaves out junior high courses, see section 5) |
+| `hs_courses_only` | CourseMaster, StudentCourses (Alberta, Manitoba) | `1` | (new; leaves out junior high courses, see section 4) |
 | `program_name_pattern`, `exclude_brd_res_9`, `exclude_future_entries` | SHSMStatus, SHSMRecord (Ontario) | `'%SHSM%'`, `1`, `0` | (from the sample scripts) |
 | `cert_group_pattern` | SHSMRecord (Ontario) | `'%SHSM'` | (from the sample scripts) |
 | Sector mapping (`b_Sector` / `c_SectorID` CASE lists) | SHSMStatus (Ontario) | Matches on program name. Keep both lists identical | (sample used hard-coded GEN ids) |
@@ -107,7 +107,7 @@ myBlueprint matches existing courses and transcripts on CourseCode (plus AltCour
 different mapping creates new courses instead of updating the existing ones. Leave CourseID blank for the same
 reason: the API import never set it, and once it is set myBlueprint matches on it alone.
 
-**Versions.** The example is at `1.2.0`. After any change, raise `version` in `plugin.xml`, re-zip the plugin and
+**Versions.** The example is at `1.2.1`. After any change, raise `version` in `plugin.xml`, re-zip the plugin and
 reinstall it. If you don't change the version, PowerSchool rejects the upload as a version conflict, and you have to
 delete the installed plugin first.
 
@@ -191,50 +191,7 @@ covers DEM and the SFTP transfer step by step. In short:
   new year, so finish the PowerSchool rollover before then. If you roll over in summer, re-run the exports
   afterwards and let myBlueprint know.
 
-## 4. How the logic compares to the myBlueprint API import
-
-The myBlueprint file import already does most of the course and student validation itself. The queries handle the
-work that only the API import did.
-
-**StudentCourses**
-* Combines stored grades with current-year CC enrolments that don't yet have a credit-bearing stored grade for the
-  same section, using the same filters as the API plugin's `studentsg` and `studentcc` queries.
-* Stored-grade filters: store codes, minimum course grade, enroll status 0 or -1, Exclude From GPA, and
-  potential or earned credit > 0. (Ontario: PLE rows are kept only when earned credit > 0.)
-* **De-duplication**, as in the API import: one row per student + course number + term last day. The row with the
-  highest earned credit wins. Ties go to stored grades over current enrolments, then to the higher grade value.
-  (Ontario: PLE rows are never de-duplicated.)
-* DateCompleted is the term last day. (Ontario: the Ontario credit date when present.)
-* Credit is earned credit when the date is in the past. Otherwise it is the course credit hours (or potential
-  credit), falling back to MAXCREDIT when that is 0. Future-dated rows still carry their date, so myBlueprint
-  treats them as in progress, as the API import does.
-* FinalMark is `AB_FINAL_MARK`, falling back to `GRADE`.
-* Ontario: for PLE rows, the PowerSchool credit type (e.g. `EN1`) goes in SubstituteID. myBlueprint uses that as the
-  transfer-rule degree area, the same as the API import. Values that don't match a diploma substitution are ignored.
-* **Difference from the API import:** 0-credit current courses are not removed.
-
-**Student**
-* Only active (enroll_status 0 → Status 1) and pre-registered (-1 → Status 2) students are exported, and
-  StudentCourses is limited to the same students. myBlueprint deactivates students who drop out of the file, so
-  inactive students aren't sent. **Difference from the API import**, which sent them with status 3.
-* FirstName and LastName are always the preferred names (`STUDENTS.FIRST_NAME` / `LAST_NAME`). LegalName is blank
-  unless `include_legal_name = 1`, in which case it is the PSCore legal first name. **This differs from the API
-  import**, which put legal names in FirstName and LastName.
-* PreRegSchoolCode is NEXT_SCHOOL when it isn't 0. myBlueprint then applies its own grade and next-school rules,
-  which are slightly narrower than the API import's.
-* Ontario: LiteracyTest is `1` when `pssr_on_common.literacyrequirement()` returns E, F or B, otherwise `0`.
-  CommunityHours is the sum of `S_ON_STU_COMMUNITY_HOURS_C`, truncated to whole hours (the file import only reads
-  whole numbers).
-
-**CourseMaster**
-* Courses active in SCHOOL_COURSE for the current or next year, or from the current PowerScheduler catalog for the
-  configured schools. There is no early-rollover setting in either course query: between rollover and September 1
-  the exports keep using the previous year's courses and enrolments.
-* Credit falls back to MAXCREDIT when it is 0.
-* Grade comes from the course code. myBlueprint re-derives it the same way and only uses the file's Grade when the
-  code doesn't give one.
-
-## 5. Differences between the province folders
+## 4. Differences between the province folders
 
 The folders are otherwise identical. Any change to shared logic (settings, filters, de-duplication, column order)
 goes into **every** folder and every `SQL Test Scripts` subfolder in the same commit, and all `plugin.xml` versions go
@@ -246,6 +203,7 @@ up together.
 | ConEdSections query | Yes (`SECTIONS`, `SCHOOLS`, `TERMS`) | Not included | Not included |
 | Student CommunityHours | `S_ON_STU_COMMUNITY_HOURS_C` | Blank | Blank |
 | Student LiteracyTest (OSSLT) | `PSSR_ON_COMMON.LITERACYREQUIREMENT()` | Blank | Blank |
+| StudentCourses FinalMark | `STOREDGRADES.GRADE` | `AB_FINAL_MARK`, else `GRADE` | `STOREDGRADES.GRADE` |
 | StudentCourses DateCompleted | `S_ON_SGR_X.CREDIT_DATE`, else term last day | Term last day | Term last day |
 | StudentCourses PLE handling | `PLE%` course numbers kept apart, `STOREDGRADES.CREDIT_TYPE` as SubstituteID | None; SubstituteID blank | None; SubstituteID blank |
 | Course code mapping | See section 1 | See section 1 | See section 1 |
@@ -255,7 +213,7 @@ up together.
 `diff -r -w Alberta Manitoba` should only show the Alberta and Manitoba differences above. `diff -r -w Ontario Alberta`
 shows those plus the Ontario ones.
 
-## 6. Known gaps and checks for the first run
+## 5. Known gaps and checks for the first run
 
 * `ps_customfields.getcf('Courses', …, 'alt_course_number')` returns NULL in districts that don't have that
   legacy custom field. That is harmless.

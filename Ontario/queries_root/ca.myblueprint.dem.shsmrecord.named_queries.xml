@@ -1,6 +1,6 @@
 <queries>
 	<!--
-		myBlueprint SHSM Record file (export as <anything>.SHSMRecord.txt, no header, Windows-1252)
+		myBlueprint SHSM Record file (export as <anything>.SHSMRecord.txt, no header, UTF-8)
 		Field order follows "myBlueprint SHSM Integration - file specifications" v1.5, section 2.
 
 		Certification records (RecordType 1) from S_ON_STU_SHSM_CERT_C, named via PS_COMMON_CODE

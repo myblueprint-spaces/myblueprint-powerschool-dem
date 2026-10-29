@@ -1,4 +1,4 @@
--- student.sql - test copy of the SQL in Alberta/queries_root/ca.myblueprint.dem.student.named_queries.xml (plugin version 1.2.0)
+-- student.sql - test copy of the SQL in Alberta/queries_root/ca.myblueprint.dem.student.named_queries.xml (plugin version 1.2.1)
 -- Run in a SQL tool (e.g. DBeaver/SQL Developer) against the PowerSchool database.
 -- Edits here do NOT change the plugin; copy any changes back into the CDATA block (without these comment lines).
 

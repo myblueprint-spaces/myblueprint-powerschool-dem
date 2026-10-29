@@ -82,7 +82,7 @@ stored AS (
 		,sg.COURSE_NUMBER                                            AS course_number
 		,sg.COURSE_NAME                                              AS course_name
 		,t.LASTDAY                                                   AS lastday
-		,COALESCE(TO_CHAR(sg.AB_FINAL_MARK), sg.GRADE)               AS mark
+		,sg.GRADE                                                    AS mark
 		,sg.EARNEDCRHRS                                              AS earned
 		,sg.POTENTIALCRHRS                                           AS potential
 		,CAST(NULL AS NUMBER)                                        AS credit_hours

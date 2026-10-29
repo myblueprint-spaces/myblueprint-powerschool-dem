@@ -1,6 +1,6 @@
 <queries>
 	<!--
-		myBlueprint SHSM Status file (export as <anything>.SHSMStatus.txt, no header, Windows-1252)
+		myBlueprint SHSM Status file (export as <anything>.SHSMStatus.txt, no header, UTF-8)
 		Field order follows "myBlueprint SHSM Integration - file specifications" v1.5, section 1.
 
 		One row per student per SHSM sector. SHSM programs are Special Programs (GEN cat = specprog)
