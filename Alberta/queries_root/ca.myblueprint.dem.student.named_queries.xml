@@ -1,0 +1,81 @@
+<queries>
+	<!--
+		myBlueprint Student file (export as <anything>.Student.txt)
+		Field order follows "Interface for Student Information Systems and myBlueprint" v1.25, section 2.3.
+		Column aliases are prefixed a_, b_, c_ ... so Data Export Manager keeps them in file order.
+		District settings are in the "cfg" block at the top of the SQL.
+	-->
+	<query name="ca.myblueprint.dem.student" coreTable="STUDENTS" flattened="true">
+		<summary>myBlueprint Student.txt</summary>
+		<description>Students for myBlueprint (Student.txt format)</description>
+		<columns>
+			<column column="STUDENTS.LAST_NAME">a_StudentID</column>
+			<column column="STUDENTS.LAST_NAME">b_StudentNumber</column>
+			<column column="STUDENTS.LAST_NAME">c_FirstName</column>
+			<column column="STUDENTS.LAST_NAME">d_LastName</column>
+			<column column="STUDENTS.LAST_NAME">e_Gender</column>
+			<column column="STUDENTS.LAST_NAME">f_DateOfBirth</column>
+			<column column="STUDENTS.LAST_NAME">g_Email</column>
+			<column column="STUDENTS.LAST_NAME">h_Grade</column>
+			<column column="STUDENTS.LAST_NAME">i_Status</column>
+			<column column="STUDENTS.LAST_NAME">j_SchoolCode</column>
+			<column column="STUDENTS.LAST_NAME">k_Homeroom</column>
+			<column column="STUDENTS.LAST_NAME">l_ElementarySchoolCode</column>
+			<column column="STUDENTS.LAST_NAME">m_CommunityHours</column>
+			<column column="STUDENTS.LAST_NAME">n_LiteracyTest</column>
+			<column column="STUDENTS.LAST_NAME">o_Diploma</column>
+			<column column="STUDENTS.LAST_NAME">p_LegalName</column>
+			<column column="STUDENTS.LAST_NAME">q_PreRegSchoolCode</column>
+		</columns>
+		<!--
+		DISTRICT SETTINGS (edit the values in the "cfg" block at the top of the SQL)
+		  school_ids          School numbers to include, comma separated, between the quotes, e.g. '1234,5678'. Leave as '' for all schools
+		  min_student_grade   Lowest student grade level to export (API board setting PsApiMinStudentGrade)
+		  include_legal_name  1 = send the PSCore legal first name in LegalName, 0 = leave LegalName blank.
+		                      FirstName and LastName are always the preferred names.
+		  append_middle_name  1 = append middle name to first name (PsApiAppendMiddleName)
+		Notes
+		  Only enroll_status 0 (Status 1, active) and -1 (Status 2, pre-registered) are exported.
+		  myBlueprint deactivates students who are no longer in the file.
+		  Alberta variant: CommunityHours and LiteracyTest are blank (Ontario-only fields).
+	-->
+		<sql><![CDATA[
+WITH cfg AS (
+	SELECT
+		''                             AS school_ids
+		,7                             AS min_student_grade
+		,0                             AS include_legal_name
+		,0                             AS append_middle_name
+	FROM dual
+)
+SELECT
+	TO_CHAR(s.STUDENT_NUMBER)                                                       AS a_StudentID
+	,s.STATE_STUDENTNUMBER                                                          AS b_StudentNumber
+	,TRIM(TRANSLATE(s.FIRST_NAME || NVL2(sm.MIDDLE_NAME, ' ' || sm.MIDDLE_NAME, NULL), '|' || CHR(9) || CHR(10) || CHR(13), '    ')) AS c_FirstName
+	,TRIM(TRANSLATE(s.LAST_NAME, '|' || CHR(9) || CHR(10) || CHR(13), '    '))                                          AS d_LastName
+	,s.GENDER                                                                       AS e_Gender
+	,TO_CHAR(s.DOB, 'YYYY-MM-DD')                                                   AS f_DateOfBirth
+	,CAST(NULL AS VARCHAR2(1))                                                      AS g_Email
+	,TO_CHAR(s.GRADE_LEVEL)                                                         AS h_Grade
+	,CASE s.ENROLL_STATUS WHEN 0 THEN '1' WHEN -1 THEN '2' ELSE '3' END             AS i_Status
+	,TO_CHAR(s.SCHOOLID)                                                            AS j_SchoolCode
+	,TRIM(TRANSLATE(s.HOME_ROOM, '|' || CHR(9) || CHR(10) || CHR(13), '    '))                                          AS k_Homeroom
+	,CAST(NULL AS VARCHAR2(1))                                                      AS l_ElementarySchoolCode
+	,CAST(NULL AS VARCHAR2(1))                                                      AS m_CommunityHours
+	,CAST(NULL AS VARCHAR2(1))                                                      AS n_LiteracyTest
+	,CAST(NULL AS VARCHAR2(1))                                                      AS o_Diploma
+	,TRIM(TRANSLATE(scf.PSCORE_LEGAL_FIRST_NAME, '|' || CHR(9) || CHR(10) || CHR(13), '    '))                          AS p_LegalName
+	,CASE WHEN NVL(s.NEXT_SCHOOL, 0) <> 0 THEN TO_CHAR(s.NEXT_SCHOOL) END           AS q_PreRegSchoolCode
+FROM STUDENTS s
+LEFT JOIN cfg ON 1=1
+LEFT JOIN STUDENTCOREFIELDS scf ON scf.STUDENTSDCID = s.DCID
+	AND cfg.include_legal_name = 1
+LEFT JOIN STUDENTS sm ON sm.ID = s.ID
+	AND cfg.append_middle_name = 1
+WHERE s.GRADE_LEVEL >= cfg.min_student_grade
+	AND s.ENROLL_STATUS IN (0, -1)
+	AND (cfg.school_ids IS NULL OR INSTR(',' || REPLACE(cfg.school_ids, ' ', '') || ',', ',' || s.SCHOOLID || ',') > 0)
+ORDER BY s.SCHOOLID, s.STUDENT_NUMBER
+]]></sql>
+	</query>
+</queries>

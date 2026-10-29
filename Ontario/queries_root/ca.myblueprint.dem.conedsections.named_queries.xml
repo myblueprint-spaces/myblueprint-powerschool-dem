@@ -1,0 +1,63 @@
+<queries>
+	<!--
+		ConEd course sections (export as <anything>.ConEdSections.txt)
+		One row per section at the Continuing Education schools listed in cfg.coned_school_ids, with its term
+		and current enrolment against the maximum. Used to build the ConEd course registration file; this is
+		not one of the files in the myBlueprint SIS spec.
+		Column aliases are prefixed a_, b_, c_ ... so Data Export Manager keeps them in file order.
+	-->
+	<query name="ca.myblueprint.dem.conedsections" coreTable="SECTIONS" flattened="true">
+		<summary>myBlueprint ConEd course sections</summary>
+		<description>Continuing Education course sections with term and enrolment</description>
+		<columns>
+			<column column="SECTIONS.COURSE_NUMBER">a_SchoolID</column>
+			<column column="SECTIONS.COURSE_NUMBER">b_SchoolName</column>
+			<column column="SECTIONS.COURSE_NUMBER">c_CourseNumber</column>
+			<column column="SECTIONS.COURSE_NUMBER">d_SectionNumber</column>
+			<column column="SECTIONS.COURSE_NUMBER">e_TermID</column>
+			<column column="SECTIONS.COURSE_NUMBER">f_TermName</column>
+			<column column="SECTIONS.COURSE_NUMBER">g_NoOfStudents</column>
+			<column column="SECTIONS.COURSE_NUMBER">h_MaxEnrollment</column>
+		</columns>
+		<!--
+		DISTRICT SETTINGS (edit the values in the "cfg" block at the top of the SQL)
+		  coned_school_ids  School numbers of the Continuing Education (summer, night, adult) schools, between the
+		                    quotes, e.g. '1234,5678'. Required: left as '' the export has no rows.
+		Notes
+		  Sections are those whose term is in the current or next school year (the year switches in September).
+		  NoOfStudents is PowerSchool's stored SECTIONS.NO_OF_STUDENTS count.
+	-->
+		<sql><![CDATA[
+WITH cfg AS (
+	SELECT
+		''                             AS coned_school_ids
+	FROM dual
+),
+yr AS (
+	SELECT TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY'))
+		- CASE WHEN TO_NUMBER(TO_CHAR(SYSDATE, 'MM')) < 9 THEN 1 ELSE 0 END
+		- 1990 AS yearid
+	FROM dual
+)
+SELECT
+	TO_CHAR(s.SCHOOLID)                                                            AS a_SchoolID
+	,TRIM(TRANSLATE(sc.NAME, '|' || CHR(9) || CHR(10) || CHR(13), '    '))         AS b_SchoolName
+	,s.COURSE_NUMBER                                                               AS c_CourseNumber
+	,s.SECTION_NUMBER                                                              AS d_SectionNumber
+	,TO_CHAR(s.TERMID)                                                             AS e_TermID
+	,TRIM(TRANSLATE(t.NAME, '|' || CHR(9) || CHR(10) || CHR(13), '    '))          AS f_TermName
+	,TO_CHAR(s.NO_OF_STUDENTS)                                                     AS g_NoOfStudents
+	,TO_CHAR(s.MAXENROLLMENT)                                                      AS h_MaxEnrollment
+FROM SECTIONS s
+LEFT JOIN cfg ON 1=1
+LEFT JOIN yr ON 1=1
+INNER JOIN SCHOOLS sc ON sc.SCHOOL_NUMBER = s.SCHOOLID
+INNER JOIN TERMS t ON t.ID = s.TERMID
+	AND t.SCHOOLID = s.SCHOOLID
+WHERE cfg.coned_school_ids IS NOT NULL
+	AND INSTR(',' || REPLACE(cfg.coned_school_ids, ' ', '') || ',', ',' || s.SCHOOLID || ',') > 0
+	AND t.YEARID IN (yr.yearid, yr.yearid + 1)
+ORDER BY s.SCHOOLID, s.COURSE_NUMBER, s.SECTION_NUMBER
+]]></sql>
+	</query>
+</queries>

@@ -1,0 +1,5 @@
+<plugin xmlns="http://plugin.powerschool.pearson.com" name="myBlueprint Data Exports" version="1.2.0">
+	<publisher name="District Name">
+		<contact email="replacewithyouremail@district.com" />
+	</publisher>
+</plugin>

@@ -1,0 +1,2 @@
+# Built plugin zips are release artifacts; rebuild from the folders
+*.zip

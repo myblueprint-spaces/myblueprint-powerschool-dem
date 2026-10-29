@@ -1,0 +1,7 @@
+<permission_mappings>
+	<!-- Anyone whose security role can open the page below can run this query in Data Export Manager. -->
+	<permission name="/admin/home.html">
+		<!-- Must exactly match the query name in queries_root/ca.myblueprint.dem.coursemaster.named_queries.xml -->
+		<implies allow="post">/ws/schema/query/ca.myblueprint.dem.coursemaster</implies>
+	</permission>
+</permission_mappings>
